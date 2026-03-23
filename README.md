@@ -243,8 +243,6 @@ CEH Practical Certified | SOC Analyst | Threat Hunting | Digital Forensics
 
 ## FILE 2 — `queries/detection_queries.spl`
 
-Create a file called `detection_queries.spl` inside a `queries` folder and paste this:
-
 ---
 ```
 # Windows Event Log Detection Queries
