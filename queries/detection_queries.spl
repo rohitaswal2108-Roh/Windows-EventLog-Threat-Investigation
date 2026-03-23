@@ -1,0 +1,77 @@
+# Windows Event Log Detection Queries
+# Analyst: Rohit Aswal | Host: DEADHACK | Date: 23 March 2026
+# All queries validated against live Splunk instance with Sysmon v15.15
+
+# ---------------------------------------------
+# AUTHENTICATION QUERIES
+# ---------------------------------------------
+
+# Query 1 - Failed logon detection (brute force pattern)
+index=main source="WinEventLog:Security" EventCode=4625
+| stats count by Account_Name, host
+| sort -count
+
+# Query 2 - Interactive logon analysis
+index=main source="WinEventLog:Security" EventCode=4624
+| where Logon_Type=2 OR Logon_Type=10 OR Logon_Type=11
+| table _time, Account_Name, Logon_Type, Workstation_Name
+| sort -_time
+
+# Query 3 - Explicit credential use (lateral movement signal)
+index=main source="WinEventLog:Security" EventCode=4648
+| table _time, Account_Name, Target_Server_Name, Process_Name
+| sort -_time
+
+# ---------------------------------------------
+# ACCOUNT ENUMERATION QUERIES
+# ---------------------------------------------
+
+# Query 4 - Account enumeration volume investigation
+index=main source="WinEventLog:Security" EventCode=4798
+| stats count by Account_Name, ComputerName
+| sort -count
+
+# Query 5 - Field schema discovery (transpose technique)
+index=main source="WinEventLog:Security" EventCode=4798
+| head 1
+| transpose
+
+# ---------------------------------------------
+# PROCESS CREATION QUERIES
+# ---------------------------------------------
+
+# Query 6 - Parent-child process tree baseline
+index=main source="WinEventLog:Microsoft-Windows-Sysmon/Operational" EventCode=1
+| stats count by ParentImage, Image
+| sort -count
+| head 20
+
+# Query 7 - Suspicious cmd.exe and PowerShell chains
+index=main source="WinEventLog:Microsoft-Windows-Sysmon/Operational" EventCode=1
+| where (Image LIKE "%powershell.exe" OR Image LIKE "%cmd.exe")
+AND NOT (ParentImage LIKE "%splunk%")
+AND NOT (ParentImage LIKE "%Windows%")
+| table _time, ParentImage, Image, CommandLine, User
+| sort -_time
+
+# Query 8 - Orphaned process detection (no parent captured)
+index=main source="WinEventLog:Microsoft-Windows-Sysmon/Operational" EventCode=1
+| where ParentImage="-" OR isnull(ParentImage)
+| table _time, Image, CommandLine, User
+| sort -_time
+
+# ---------------------------------------------
+# NETWORK CONNECTION QUERIES
+# ---------------------------------------------
+
+# Query 9 - Outbound network connections (C2 detection pattern)
+index=main source="WinEventLog:Microsoft-Windows-Sysmon/Operational" EventCode=3
+| table _time, Image, DestinationIp, DestinationPort, User
+| where DestinationIp!="127.0.0.1"
+| sort -_time
+
+# Query 10 - Outbound connections by process - summary view
+index=main source="WinEventLog:Microsoft-Windows-Sysmon/Operational" EventCode=3
+| where DestinationIp!="127.0.0.1"
+| stats count by Image, DestinationPort
+| sort -count
