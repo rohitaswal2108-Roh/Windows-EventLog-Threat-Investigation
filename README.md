@@ -326,19 +326,4 @@ index=main source="WinEventLog:Microsoft-Windows-Sysmon/Operational" EventCode=3
 | sort -count
 ```
 
----
 
-## FILE 3 — `screenshots/placeholder.md`
-
-Create this file inside the `screenshots` folder so the folder exists on GitHub before you upload images:
-```
-Screenshots from Splunk investigation — uploaded separately.
-```
-
----
-
-## FILE 4 — `report/placeholder.md`
-
-Create this inside the `report` folder:
-```
-SOC investigation report — uploaded separately.
